@@ -1,6 +1,7 @@
 import numpy as np
 import time
 import math
+import SymPy
 p = 7873
 q = 7487
 
@@ -12,7 +13,7 @@ def Ext_Euler_alg(phi, e):
         check = (e*d) % phi
         if d % 100000 == 0:
             print("d value is currently: " + str(d), end='\r')
-    print()
+    print("d value is currently: " + str(d))
     return d
 
 def e_generator(phi):
@@ -22,7 +23,7 @@ def e_generator(phi):
         e += 2
         coprime_check = math.gcd(e, phi)
         print("e value is currently: " + str(e), end='\r')
-    print()
+    print("e value is currently: " + str(e))
     return e
 
 def RSA_key_gen(p, q):
