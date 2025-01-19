@@ -4,7 +4,6 @@ import math
 import sympy
 p = 7873
 q = 7487
-
 def Ext_Euler_alg(phi, e):
     d = 1
     check = (e*d) % phi
@@ -17,6 +16,15 @@ def Ext_Euler_alg(phi, e):
     return d
 
 def e_generator(phi):
+    e_ideal = 65537
+    if math.gcd(e_ideal, phi) == 1:
+        ans = str(input("""Would you like to use the best e value? 
+This can make key generation time very long. [Y,N]: """)).strip().lower()
+        if ans == "y":
+            e = e_ideal
+            return e
+        else:
+            print("Now generating your e value!")
     e = 3
     coprime_check = math.gcd(e, phi)
     while coprime_check != 1:
@@ -33,7 +41,7 @@ def RSA_key_gen(p, q):
     e = e_generator(phi)              #dont go lower than 
     d = Ext_Euler_alg(phi, e)
     tf = time.perf_counter()
-    print("Time elapsed is: " + str(round(tf-ti, 4)) + " seconds")
+    print("Time elapsed to generate key is: " + str(round(tf-ti, 4)) + " seconds")
     return n, e, d
 n,e,d = RSA_key_gen(p, q)
 print(n,e,d)
