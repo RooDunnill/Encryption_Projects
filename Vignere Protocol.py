@@ -335,6 +335,9 @@ I want to code an assymetric protocol next
 Hope you enjoy!  
       """)
 time.sleep(1)
+print("""For now the code can only take letters with no spaces or special characters, will convert
+capitals to lower case""")
+time.sleep(1)
 #k_length_find(cypher_test)
 protocol = int(input("Press 1 for encryption, 2 for decryption and 3 for cracker:"))
 if protocol == 1:
