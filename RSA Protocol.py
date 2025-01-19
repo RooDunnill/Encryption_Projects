@@ -10,22 +10,34 @@ def Ext_Euler_alg(phi, e):
     while check != 1:
         d += 1
         check = (e*d) % phi
+        if d % 100000 == 0:
+            print("d value is currently: " + str(d), end='\r')
+    print()
     return d
 
+def e_generator(phi):
+    e = 3
+    coprime_check = math.gcd(e, phi)
+    while coprime_check != 1:
+        e += 2
+        coprime_check = math.gcd(e, phi)
+        print("e value is currently: " + str(e), end='\r')
+    print()
+    return e
 
 def RSA_key_gen(p, q):
     n = p*q
     phi = (p-1)*(q-1)
-    e = 3                                       #dont go lower than 3
-    coprime_check = math.gcd(e, phi)
-    while coprime_check != 1:
-        coprime_check = math.gcd(e, phi)
-        e += 2
+    e = e_generator(phi)              #dont go lower than 
     d = Ext_Euler_alg(phi, e)
     return n, e, d
 n,e,d = RSA_key_gen(p, q)
 print(n,e,d)
         
+
+
+
+
 
 
 
