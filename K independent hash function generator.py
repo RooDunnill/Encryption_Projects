@@ -1,6 +1,20 @@
 import numpy as np
+from time import perf_counter
+from random import randint
 class CustomError(Exception):
     pass
+
+
+def gen_rand_key(n):
+    if n <= 0:
+        raise ValueError(f"n must be positive")
+    if isinstance(n, int):
+        lower_bound = 10**(n-1)
+        upper_bound = 10**n - 1
+        return randint(lower_bound, upper_bound)
+    else:
+        raise TypeError(f"n cannot be type {type(n)}, must be int")
+
 
 class Hash:
     def __init__(self, **kwargs):
@@ -15,8 +29,9 @@ class Hash:
         else:
             raise CustomError(f"The length of the key must be an integer value of the length of k, where k is the k independent value")
     
-    def hash(self, val, text=True):
-        if isinstance(val, int) or isinstance(val, float):
+    def k_hash(self, vals, text=True):
+        start_time = perf_counter()
+        def compute_hash(val):
             poly = len(self.parameters)
             hash_value = 0
             poly_change = poly
@@ -24,20 +39,26 @@ class Hash:
                 hash_value += i*(val**poly_change)
                 poly_change -= 1
             hash_value = hash_value % self.p
-            if text == True:
-                print(f"The {self.k} independent hashed value of {val} is: {hash_value}")
             return hash_value
-        else:
-            raise CustomError(f"The hash input value cannot by of {type(val)}, it must be a float or an integer.")
-    
-    def hash_list(self, input_list, text=True):
-        if isinstance(input_list, np.ndarray) or isinstance(input_list, list):
-            hash_list = np.array([self.hash(i, text=False) for i in input_list])
-            if text == True:
-                print(f"The list of hash imputs and outputs are:\n {np.array(list(zip(input_list, hash_list)))}")
+        
+        if isinstance(vals, int) or isinstance(vals, float):
+            hash_value = compute_hash(vals)
+            if text:
+                print(f"The {self.k} independent hashed value of {vals} is: {hash_value}")
+                end_time = perf_counter()
+                print(f"Time taken to hash value was: {end_time - start_time:.4f} seconds")
+            return hash_value
+        
+        elif isinstance(vals, np.ndarray) or isinstance(vals, list):
+            hash_list = np.array([compute_hash(i) for i in vals])
+            if text:
+                print(f"The list of {self.k} independent hash inputs and outputs are:\n {np.array(list(zip(vals, hash_list)))}")
+                end_time = perf_counter()
+                print(f"Time taken to hash list was: {end_time - start_time:.4f} seconds")
             return hash_list
         else:
-            raise CustomError(f"The input_list cannot be of the type {type(input_list)}, it must be of the type float or integer.")
+            raise CustomError(f"The hash input value cannot by of {type(vals)}, it must be a float or an integer.")
+    
 
     def get_key(self, text=False):
         if text == True:
@@ -55,12 +76,15 @@ class Hash:
         return self.p
 
 
-Hash(k=2, key=896745362738).hash(55)
-Hash(k=2, key=896745362738).hash(665)
-Hash(k=2, key=896745362738).hash(66)
-Hash(k=2, key=896745362738).hash(65)
-Hash().hash(7802311)
+Hash(k=2, key=896745362738).k_hash(55)
+Hash(k=2, key=896745362738).k_hash(665)
+Hash(k=2, key=896745362738).k_hash(66)
+Hash(k=2, key=896745362738).k_hash(65)
+Hash().k_hash(7802311)
 test = Hash(k=3, key=912369467)
 Hash(k=3)
 list_vals = [1,2,3,4,5,6,7,8]
-Hash(k=3).hash_list(list_vals)
+Hash(k=3).k_hash(list_vals)
+Hash(k=10, key=gen_rand_key(100)).k_hash(list_vals)
+k = 20
+Hash(k=k, key=gen_rand_key(k**2)).k_hash(list_vals)
