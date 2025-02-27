@@ -1,3 +1,4 @@
+import numpy as np
 class CustomError(Exception):
     pass
 
@@ -15,16 +16,28 @@ class Hash:
             raise CustomError(f"The length of the key must be an integer value of the length of k, where k is the k independent value")
     
     def hash(self, val, text=True):
-        poly = len(self.parameters)
-        hash_value = 0
-        poly_change = poly
-        for i in self.parameters:
-            hash_value += i*(val**poly_change)
-            poly_change -= 1
-        hash_value = hash_value % self.p
-        if text == True:
-            print(f"The {self.k} independent hashed value of {val} is: {hash_value}")
-        return hash_value
+        if isinstance(val, int) or isinstance(val, float):
+            poly = len(self.parameters)
+            hash_value = 0
+            poly_change = poly
+            for i in self.parameters:
+                hash_value += i*(val**poly_change)
+                poly_change -= 1
+            hash_value = hash_value % self.p
+            if text == True:
+                print(f"The {self.k} independent hashed value of {val} is: {hash_value}")
+            return hash_value
+        else:
+            raise CustomError(f"The hash input value cannot by of {type(val)}, it must be a float or an integer.")
+    
+    def hash_list(self, input_list, text=True):
+        if isinstance(input_list, np.ndarray) or isinstance(input_list, list):
+            hash_list = np.array([self.hash(i, text=False) for i in input_list])
+            if text == True:
+                print(f"The list of hash imputs and outputs are:\n {np.array(list(zip(input_list, hash_list)))}")
+            return hash_list
+        else:
+            raise CustomError(f"The input_list cannot be of the type {type(input_list)}, it must be of the type float or integer.")
 
     def get_key(self, text=False):
         if text == True:
@@ -42,12 +55,12 @@ class Hash:
         return self.p
 
 
-Hash(k=2, key=896745362738).hash(5)
+Hash(k=2, key=896745362738).hash(55)
 Hash(k=2, key=896745362738).hash(665)
 Hash(k=2, key=896745362738).hash(66)
 Hash(k=2, key=896745362738).hash(65)
 Hash().hash(7802311)
 test = Hash(k=3, key=912369467)
-test.get_k(text=True)
-test.get_key(text=True)
-test.get_p(text=True)
+Hash(k=3)
+list_vals = [1,2,3,4,5,6,7,8]
+Hash(k=3).hash_list(list_vals)
