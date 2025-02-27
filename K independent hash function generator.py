@@ -1,25 +1,20 @@
-import numpy as np
-
 class CustomError(Exception):
     pass
 
-
 class Hash:
-    def __init__(self, k, key, **kwargs):
+    def __init__(self, **kwargs):
         self.p = kwargs.get("p", 7)
-        self.k = int(k)
-        self.key = key
+        self.k = int(kwargs.get("k", 6))
+        self.key = int(kwargs.get("key", 382956234980))
         self.key_length = int(len(str(self.key)))
-        if isinstance(self.key, int):
-            if self.key_length % self.k == 0:
-                string = str(self.key)
-                self.parameters = [int(string[i:i+self.k]) for i in range(0, len(string), self.k)]
-            else:
-                raise CustomError(f"The length of the key must be an integer value of the length of k, where k is the k independent value")
+        if self.key_length % self.k == 0:
+            string = str(self.key)
+            interval = int(self.key_length/self.k)
+            self.parameters = [int(string[i:i+interval]) for i in range(0, len(string), interval)]
         else:
-            raise CustomError(f"The key must be an integer")
+            raise CustomError(f"The length of the key must be an integer value of the length of k, where k is the k independent value")
     
-    def hash_function(self, val):
+    def hash(self, val, text=True):
         poly = len(self.parameters)
         hash_value = 0
         poly_change = poly
@@ -27,9 +22,32 @@ class Hash:
             hash_value += i*(val**poly_change)
             poly_change -= 1
         hash_value = hash_value % self.p
-        print(f"The {self.k} independent hashed value of {val} is: {hash_value}")
+        if text == True:
+            print(f"The {self.k} independent hashed value of {val} is: {hash_value}")
+        return hash_value
 
-Hash(k=2, key=896745362738).hash_function(5)
-Hash(k=2, key=896745362738).hash_function(665)
-Hash(k=2, key=896745362738).hash_function(66)
-Hash(k=2, key=896745362738).hash_function(65)
+    def get_key(self, text=False):
+        if text == True:
+            print(f"The key for this hash function is: {self.key}")
+        return self.key
+
+    def get_k(self, text=False):
+        if text == True:
+            print(f"The hash function is {self.k} independent")
+        return self.k
+
+    def get_p(self, text=False):
+        if text == True:
+            print(f"The mod value of this function is: {self.p}")
+        return self.p
+
+
+Hash(k=2, key=896745362738).hash(5)
+Hash(k=2, key=896745362738).hash(665)
+Hash(k=2, key=896745362738).hash(66)
+Hash(k=2, key=896745362738).hash(65)
+Hash().hash(7802311)
+test = Hash(k=3, key=912369467)
+test.get_k(text=True)
+test.get_key(text=True)
+test.get_p(text=True)
