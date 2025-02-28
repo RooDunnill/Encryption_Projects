@@ -20,6 +20,14 @@ def gen_rand_key(n):
 
 
 class Hash:
+    plot_count = 0
+    p_plot = []
+    titles_plot = []
+    k_plot = []
+    key_plot = []
+    plot_all_counts = []
+    fig = None
+    axs = None
     def __init__(self, **kwargs):
         self.p = kwargs.get("p", 7)
         self.k = int(kwargs.get("k", 6))
@@ -31,11 +39,14 @@ class Hash:
             self.parameters = [int(string[i:i+interval]) for i in range(0, len(string), interval)]
         else:
             raise CustomError(f"The length of the key must be an integer value of the length of k, where k is the k independent value")
+        
+        
+        
     
     def k_hash(self, vals, text=True):
         start_time = perf_counter()
         def compute_hash(val):
-            print(f"\rHasing value: {val} ", end="")
+            print(f"\rHashing value: {val} ", end="")
             poly = len(self.parameters)
             hash_value = 0
             poly_change = poly
@@ -62,16 +73,65 @@ class Hash:
             return hash_list
         else:
             raise CustomError(f"The hash input value cannot by of {type(vals)}, it must be a float or an integer.")
+        
+    def custom_hash(self, vals, text=True):
+        start_time = perf_counter()
+        def compute_hash(val):
+            print(f"\rHashing value: {val} ", end="")
+            poly = len(self.parameters)
+            hash_value = 0
+            poly_change = poly
+            for i in self.parameters:
+                i = (i**2) + i + 1 % i**2 - 1
+                hash_value += i*(val**poly_change) % (self.p + i**2 + 1)
+                poly_change -= 1
+            hash_value = hash_value % self.p
+            return hash_value
+        
+        if isinstance(vals, int) or isinstance(vals, float):
+            hash_value = compute_hash(vals)
+            if text:
+                print(f"The {self.k} independent hashed value of {vals} is: {hash_value}")
+                end_time = perf_counter()
+                print(f"Time taken to hash value was: {end_time - start_time:.6f} seconds")
+            return hash_value
+        
+        elif isinstance(vals, np.ndarray) or isinstance(vals, list):
+            hash_list = np.array([compute_hash(i) for i in vals])
+            if text:
+                print(f"The list of {self.k} independent hash inputs and outputs are:\n {np.array(list(zip(vals, hash_list)))}")
+                end_time = perf_counter()
+                print(f"Time taken to hash list was: {end_time - start_time:.6f} seconds")
+            return hash_list
+        else:
+            raise CustomError(f"The hash input value cannot by of {type(vals)}, it must be a float or an integer.")
     
     def analyse(self, hashed_vals):
+        Hash.plot_count += 1
+
         counts = np.zeros(self.p) 
         for val in hashed_vals:
             counts[val] += 1 
-        plt.bar(range(self.p), counts, color='skyblue', edgecolor='black')
-        plt.xlabel('Bins')
-        plt.ylabel('Frequency')
-        plt.title(f'Distribution of {self.k}-independent hash value\n with a mod of {self.p} and a key of {self.key}')
-        plt.show()
+        Hash.plot_all_counts.append(counts)
+        Hash.k_plot.append(self.k)
+        Hash.p_plot.append(self.p)
+        Hash.key_plot.append(self.key)
+
+        if Hash.fig is not None:
+            plt.close(Hash.fig)
+
+        if Hash.plot_count == 1:
+            Hash.fig, Hash.axs = plt.subplots(1, 1, figsize=(4, 4))
+            Hash.axs = [Hash.axs]
+        else:
+            Hash.fig, Hash.axs = plt.subplots(1, Hash.plot_count, figsize=(4 * Hash.plot_count, 4))
+            
+        for i in range(Hash.plot_count):
+            Hash.axs[i].bar(range(Hash.p_plot[i]), Hash.plot_all_counts[i], color='skyblue', edgecolor='black')
+            Hash.axs[i].set_title(f'Distribution of {Hash.k_plot[i]}-independent hash value\n with a mod of {Hash.p_plot[i]} and a key of {Hash.key_plot[i]}')
+            Hash.axs[i].set_xlabel('Bins')
+            Hash.axs[i].set_ylabel('Frequency')
+        Hash.fig.tight_layout()
         return counts
 
     def get_key(self, text=False):
@@ -91,8 +151,14 @@ class Hash:
 
 
 
-list_vals = np.array(range(100000))
-k = 2
-k_2_hash = Hash(k=k, key=22, p=2)
+list_vals = np.array(range(10000))
+k = 3
+k_2_hash = Hash(k=2, key=222222, p=4)
 hashed_values = k_2_hash.k_hash(list_vals)
 k_2_hash.analyse(hashed_values)
+custom_hashed_values = k_2_hash.custom_hash(list_vals)
+k_2_hash.analyse(custom_hashed_values)
+k_3_hash = Hash(k=3, key=222222, p=4)
+custom_hashed_values = k_3_hash.custom_hash(list_vals)
+k_3_hash.analyse(custom_hashed_values)
+plt.show()
