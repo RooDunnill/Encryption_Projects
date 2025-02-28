@@ -1,6 +1,8 @@
 import numpy as np
 from time import perf_counter
 from random import randint
+from collections import Counter
+import matplotlib.pyplot as plt
 class CustomError(Exception):
     pass
 
@@ -14,6 +16,7 @@ def gen_rand_key(n):
         return randint(lower_bound, upper_bound)
     else:
         raise TypeError(f"n cannot be type {type(n)}, must be int")
+
 
 
 class Hash:
@@ -32,11 +35,12 @@ class Hash:
     def k_hash(self, vals, text=True):
         start_time = perf_counter()
         def compute_hash(val):
+            print(f"\rHasing value: {val} ", end="")
             poly = len(self.parameters)
             hash_value = 0
             poly_change = poly
             for i in self.parameters:
-                hash_value += i*(val**poly_change)
+                hash_value += i*(val**poly_change) % self.p
                 poly_change -= 1
             hash_value = hash_value % self.p
             return hash_value
@@ -46,7 +50,7 @@ class Hash:
             if text:
                 print(f"The {self.k} independent hashed value of {vals} is: {hash_value}")
                 end_time = perf_counter()
-                print(f"Time taken to hash value was: {end_time - start_time:.4f} seconds")
+                print(f"Time taken to hash value was: {end_time - start_time:.6f} seconds")
             return hash_value
         
         elif isinstance(vals, np.ndarray) or isinstance(vals, list):
@@ -54,11 +58,21 @@ class Hash:
             if text:
                 print(f"The list of {self.k} independent hash inputs and outputs are:\n {np.array(list(zip(vals, hash_list)))}")
                 end_time = perf_counter()
-                print(f"Time taken to hash list was: {end_time - start_time:.4f} seconds")
+                print(f"Time taken to hash list was: {end_time - start_time:.6f} seconds")
             return hash_list
         else:
             raise CustomError(f"The hash input value cannot by of {type(vals)}, it must be a float or an integer.")
     
+    def analyse(self, hashed_vals):
+        counts = np.zeros(self.p) 
+        for val in hashed_vals:
+            counts[val] += 1 
+        plt.bar(range(self.p), counts, color='skyblue', edgecolor='black')
+        plt.xlabel('Bins')
+        plt.ylabel('Frequency')
+        plt.title(f'Distribution of {self.k}-independent hash value\n with a mod of {self.p} and a key of {self.key}')
+        plt.show()
+        return counts
 
     def get_key(self, text=False):
         if text == True:
@@ -76,15 +90,9 @@ class Hash:
         return self.p
 
 
-Hash(k=2, key=896745362738).k_hash(55)
-Hash(k=2, key=896745362738).k_hash(665)
-Hash(k=2, key=896745362738).k_hash(66)
-Hash(k=2, key=896745362738).k_hash(65)
-Hash().k_hash(7802311)
-test = Hash(k=3, key=912369467)
-Hash(k=3)
-list_vals = [1,2,3,4,5,6,7,8]
-Hash(k=3).k_hash(list_vals)
-Hash(k=10, key=gen_rand_key(100)).k_hash(list_vals)
-k = 20
-Hash(k=k, key=gen_rand_key(k**2)).k_hash(list_vals)
+
+list_vals = np.array(range(100000))
+k = 2
+k_2_hash = Hash(k=k, key=22, p=2)
+hashed_values = k_2_hash.k_hash(list_vals)
+k_2_hash.analyse(hashed_values)
