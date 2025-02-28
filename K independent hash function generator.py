@@ -26,6 +26,7 @@ class Hash:
     k_plot = []
     key_plot = []
     plot_all_counts = []
+    hash_type = []
     fig = None
     axs = None
     def __init__(self, **kwargs):
@@ -39,11 +40,14 @@ class Hash:
             self.parameters = [int(string[i:i+interval]) for i in range(0, len(string), interval)]
         else:
             raise CustomError(f"The length of the key must be an integer value of the length of k, where k is the k independent value")
+        self.name = kwargs.get("name", None)
+        self.type = kwargs.get("type", None)
         
         
         
     
     def k_hash(self, vals, text=True):
+        self.hash_type = "k_hash"
         start_time = perf_counter()
         def compute_hash(val):
             print(f"\rHashing value: {val} ", end="")
@@ -74,20 +78,28 @@ class Hash:
         else:
             raise CustomError(f"The hash input value cannot by of {type(vals)}, it must be a float or an integer.")
         
-    def custom_hash(self, vals, text=True):
+    def custom_hash(self, vals, text=True, num=1):
+        self.hash_type = "custom"
         start_time = perf_counter()
         def compute_hash(val):
             print(f"\rHashing value: {val} ", end="")
             poly = len(self.parameters)
             hash_value = 0
             poly_change = poly
-            for i in self.parameters:
-                i = (i**2) + i + 1 % i**2 - 1
-                hash_value += i*(val**poly_change) % (self.p + i**2 + 1)
-                poly_change -= 1
-            hash_value = hash_value % self.p
-            return hash_value
-        
+            if num == 1:
+                for i in self.parameters:
+                    i = (i**2) + i + 1 % i**2 - 1
+                    hash_value += i*(val**poly_change) % (self.p + i**2 + 1)
+                    poly_change -= 1
+                hash_value = hash_value % self.p
+                return hash_value
+            elif num == s:
+                for i in self.parameters:
+                    i = (i**2) + i + 1 % i**2 - 1
+                    hash_value += i*(val**poly_change) % (self.p + i**2 + 1)
+                    poly_change -= 1
+                hash_value = hash_value % self.p
+                return hash_value
         if isinstance(vals, int) or isinstance(vals, float):
             hash_value = compute_hash(vals)
             if text:
@@ -116,21 +128,22 @@ class Hash:
         Hash.k_plot.append(self.k)
         Hash.p_plot.append(self.p)
         Hash.key_plot.append(self.key)
+        Hash.hash_type.append(self.hash_type)
 
         if Hash.fig is not None:
             plt.close(Hash.fig)
 
         if Hash.plot_count == 1:
-            Hash.fig, Hash.axs = plt.subplots(1, 1, figsize=(4, 4))
+            Hash.fig, Hash.axs = plt.subplots(1, 1, figsize=(6, 6))
             Hash.axs = [Hash.axs]
         else:
-            Hash.fig, Hash.axs = plt.subplots(1, Hash.plot_count, figsize=(4 * Hash.plot_count, 4))
+            Hash.fig, Hash.axs = plt.subplots(1, Hash.plot_count, figsize=(3.5 * Hash.plot_count + 2, 1.2 * Hash.plot_count))
             
         for i in range(Hash.plot_count):
             Hash.axs[i].bar(range(Hash.p_plot[i]), Hash.plot_all_counts[i], color='skyblue', edgecolor='black')
-            Hash.axs[i].set_title(f'Distribution of {Hash.k_plot[i]}-independent hash value\n with a mod of {Hash.p_plot[i]} and a key of {Hash.key_plot[i]}')
+            Hash.axs[i].set_title(self.generate_title(i))
             Hash.axs[i].set_xlabel('Bins')
-            Hash.axs[i].set_ylabel('Frequency')
+            Hash.axs[0].set_ylabel('Frequency')
         Hash.fig.tight_layout()
         return counts
 
@@ -149,16 +162,24 @@ class Hash:
             print(f"The mod value of this function is: {self.p}")
         return self.p
 
-
+    def generate_title(self, i):
+        if Hash.hash_type[i] == "k_hash":
+            return f'{i + 1}. Distribution of {Hash.k_plot[i]}-independent\n hash value with a mod of {Hash.p_plot[i]}\n and a key of {Hash.key_plot[i]}'
+        elif Hash.hash_type[i] == "custom":
+            return f'{i + 1}. Custom hash function with {Hash.k_plot[i]}\n independent values with a mod {Hash.p_plot[i]}\n and key {Hash.key_plot[i]}'
+        else:
+            return f'{i + 1}. Hash Analysis for key {Hash.key_plot[i]}'
 
 list_vals = np.array(range(10000))
-k = 3
-k_2_hash = Hash(k=2, key=222222, p=4)
+k = 2
+p = 7
+rand_key = gen_rand_key(6)
+k_2_hash = Hash(k=k, key=rand_key, p=p)
 hashed_values = k_2_hash.k_hash(list_vals)
 k_2_hash.analyse(hashed_values)
 custom_hashed_values = k_2_hash.custom_hash(list_vals)
 k_2_hash.analyse(custom_hashed_values)
-k_3_hash = Hash(k=3, key=222222, p=4)
+k_3_hash = Hash(k=k+1, key=rand_key, p=p)
 custom_hashed_values = k_3_hash.custom_hash(list_vals)
 k_3_hash.analyse(custom_hashed_values)
 plt.show()
