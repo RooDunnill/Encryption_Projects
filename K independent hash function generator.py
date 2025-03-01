@@ -1,8 +1,8 @@
 import numpy as np
 from time import perf_counter
 from random import randint
-from collections import Counter
 import matplotlib.pyplot as plt
+from matplotlib.colors import PowerNorm
 class CustomError(Exception):
     pass
 
@@ -27,6 +27,7 @@ class Hash:
     key_plot = []
     plot_all_counts = []
     hash_type = []
+    shannon_plot = []
     fig = None
     axs = None
     def __init__(self, **kwargs):
@@ -43,9 +44,21 @@ class Hash:
         self.name = kwargs.get("name", None)
         self.type = kwargs.get("type", None)
         
+    @staticmethod
+    def shannon_entropy(bins):
+        bins = np.array(bins)
+        total = np.sum(bins)
+        if total == 0:
+            return 0 
         
+        probs = bins / total
         
-    
+        probs = probs[probs > 0]
+        
+        entropy = -np.sum(probs * np.log2(probs))
+        return entropy
+
+
     def k_hash(self, vals, text=True):
         self.hash_type = "k_hash"
         start_time = perf_counter()
@@ -93,9 +106,8 @@ class Hash:
                     poly_change -= 1
                 hash_value = hash_value % self.p
                 return hash_value
-            elif num == s:
+            elif num == 2:
                 for i in self.parameters:
-                    i = (i**2) + i + 1 % i**2 - 1
                     hash_value += i*(val**poly_change) % (self.p + i**2 + 1)
                     poly_change -= 1
                 hash_value = hash_value % self.p
@@ -120,7 +132,7 @@ class Hash:
     
     def analyse(self, hashed_vals):
         Hash.plot_count += 1
-
+        cmap = plt.get_cmap("Dark2")
         counts = np.zeros(self.p) 
         for val in hashed_vals:
             counts[val] += 1 
@@ -129,22 +141,36 @@ class Hash:
         Hash.p_plot.append(self.p)
         Hash.key_plot.append(self.key)
         Hash.hash_type.append(self.hash_type)
-
+        self.shan_ent = Hash.shannon_entropy(counts)
+        Hash.shannon_plot.append(self.shan_ent)
         if Hash.fig is not None:
             plt.close(Hash.fig)
-
+        cols = 3
+        rows = (Hash.plot_count + cols - 1) // cols
         if Hash.plot_count == 1:
             Hash.fig, Hash.axs = plt.subplots(1, 1, figsize=(6, 6))
             Hash.axs = [Hash.axs]
         else:
-            Hash.fig, Hash.axs = plt.subplots(1, Hash.plot_count, figsize=(3.5 * Hash.plot_count + 2, 1.2 * Hash.plot_count))
+            Hash.fig, Hash.axs = plt.subplots(rows, cols, figsize=(14, 7))
+            Hash.axs = Hash.axs.flatten()
             
         for i in range(Hash.plot_count):
-            Hash.axs[i].bar(range(Hash.p_plot[i]), Hash.plot_all_counts[i], color='skyblue', edgecolor='black')
+            norm = PowerNorm(gamma=50, vmin=0.8, vmax=1)
+            entropy_norm = Hash.shannon_plot[i] / np.log2(Hash.p_plot[i])  
+            color = cmap(norm(entropy_norm))
+            Hash.axs[i].bar(range(Hash.p_plot[i]), Hash.plot_all_counts[i], color=color, edgecolor='black', label=f"Shannon Entropy: {Hash.shannon_plot[i]:.5f}")
+            Hash.axs[i].plot([0, 1], [0, 1], label=f"Mod Value: {Hash.p_plot[i]}")
             Hash.axs[i].set_title(self.generate_title(i))
             Hash.axs[i].set_xlabel('Bins')
-            Hash.axs[0].set_ylabel('Frequency')
+            Hash.axs[i].legend()
+            Hash.axs[i].grid(True, linestyle='--', linewidth=0.6, alpha=0.7)
+            if i % cols == 1:
+                Hash.axs[0].set_ylabel('Frequency')
         Hash.fig.tight_layout()
+        Hash.fig.canvas.draw()
+        Hash.fig.suptitle('Hash Function Analysis', fontsize=14, fontweight='bold')
+        Hash.fig.tight_layout(rect=[0, 0.03, 1, 0.95])
+        plt.subplots_adjust(hspace=0.5, wspace=0.15)
         return counts
 
     def get_key(self, text=False):
@@ -164,22 +190,33 @@ class Hash:
 
     def generate_title(self, i):
         if Hash.hash_type[i] == "k_hash":
-            return f'{i + 1}. Distribution of {Hash.k_plot[i]}-independent\n hash value with a mod of {Hash.p_plot[i]}\n and a key of {Hash.key_plot[i]}'
+            return f"{i + 1}. {Hash.k_plot[i]}-indep hash values\n with a max SE of {np.log2(self.p):.3f}"
         elif Hash.hash_type[i] == "custom":
-            return f'{i + 1}. Custom hash function with {Hash.k_plot[i]}\n independent values with a mod {Hash.p_plot[i]}\n and key {Hash.key_plot[i]}'
+            return f"{i + 1}. Custom hash function with {Hash.k_plot[i]}\n with a max SE of {np.log2(self.p):.3f}"
         else:
-            return f'{i + 1}. Hash Analysis for key {Hash.key_plot[i]}'
+            return f"{i + 1}. Hash Analysis for key {Hash.key_plot[i]}"
 
-list_vals = np.array(range(10000))
+
+    
+list_vals = np.array(range(100000))
 k = 2
 p = 7
-rand_key = gen_rand_key(6)
+rand_key = gen_rand_key(24)
 k_2_hash = Hash(k=k, key=rand_key, p=p)
-hashed_values = k_2_hash.k_hash(list_vals)
-k_2_hash.analyse(hashed_values)
-custom_hashed_values = k_2_hash.custom_hash(list_vals)
-k_2_hash.analyse(custom_hashed_values)
+k_2_hash.analyse(k_2_hash.k_hash(list_vals))
+
 k_3_hash = Hash(k=k+1, key=rand_key, p=p)
-custom_hashed_values = k_3_hash.custom_hash(list_vals)
-k_3_hash.analyse(custom_hashed_values)
+k_3_hash.analyse(k_3_hash.k_hash(list_vals))
+
+k_4_hash = Hash(k=k+2, key=rand_key, p=p)
+k_4_hash.analyse(k_4_hash.k_hash(list_vals))
+
+k_6_hash = Hash(k=k+4, key=rand_key, p=p)
+k_6_hash.analyse(k_6_hash.k_hash(list_vals))
+
+k_8_hash = Hash(k=k+6, key=rand_key, p=p)
+k_8_hash.analyse(k_8_hash.k_hash(list_vals))
+
+k_12_hash = Hash(k=k+10, key=rand_key, p=p)
+k_12_hash.analyse(k_12_hash.k_hash(list_vals))
 plt.show()
